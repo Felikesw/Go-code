@@ -1,3 +1,7 @@
+/*
+This gets the contents from local host and unmarshal it
+*/
+
 package main
 
 import (
