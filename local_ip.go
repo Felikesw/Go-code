@@ -53,7 +53,7 @@ func ip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//convert it to JSON
-	b, err := json.Marshal(ips)
+	b, err := json.MarshalIndent(ips, "", "	")
 	if err != nil {
 		panic(err)
 	}
