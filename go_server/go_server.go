@@ -23,9 +23,9 @@ import (
 	"os"
 )
 
-//open opens the file named data.json
-func openFile() (map[string]string, error) {
-	file, err := os.Open("data.json")
+//OpenFile opens the file named data.json
+func OpenFile(filename string) (map[string]string, error) {
+	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func modifyPair(w http.ResponseWriter, r *http.Request, pair map[string]string, 
 
 	fmt.Fprintf(w, "Modified key \"%v\": \nOriginal data: %v\nNew data: %v ", key, pair[key], data)
 	pair[key] = data
-	WriteFile(pair)
+	WriteFile(pair, "data.json")
 }
 
 //add will add the key/value pair
@@ -138,7 +138,7 @@ func addPair(w http.ResponseWriter, r *http.Request, pair map[string]string, che
 
 	data := q["data"][0]
 	pair[key] = data
-	WriteFile(pair)
+	WriteFile(pair, "data.json")
 	fmt.Fprintf(w, "New data added: %v", "\n"+key+"="+data)
 }
 
@@ -163,14 +163,14 @@ func deletePair(w http.ResponseWriter, r *http.Request, pairs map[string]string,
 	}
 
 	delete(pairs, key)
-	WriteFile(pairs)
+	WriteFile(pairs, "data.json")
 	fmt.Fprintf(w, "The key \"%v\" and its data has been deleted", key)
 }
 
 //WriteFile takes in the new map and writes the content into the json file
-func WriteFile(input map[string]string) {
+func WriteFile(input map[string]string, filename string) {
 
-	JSONWrite, err := os.OpenFile("data.json", os.O_RDWR|os.O_TRUNC, 0644)
+	JSONWrite, err := os.OpenFile(filename, os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -203,7 +203,7 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 func makeHandler(f func(http.ResponseWriter, *http.Request, map[string]string, ...bool)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		pair, err := openFile()
+		pair, err := OpenFile("data.json")
 		if err != nil {
 			fmt.Fprint(w, "Failed to open the file")
 			log.Fatal("failed to opent the requested file")
