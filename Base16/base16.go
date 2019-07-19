@@ -1,17 +1,39 @@
 package main
 
 import (
-    "fmt"
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
 )
 
-func main(){
+func main() {
 
-	results := "0B8F"
-    for j := 0; j < 12; j += 2 {
-			d := int32(0)
-			d |= int32(results[j]) << 8
-			d |= int32(results[j+1])
+	fmt.Println("Please enter the lower two base16 numbers: ")
 
-			fmt.Printf("s:%d: data:%d\n", j/2, d)
-		}
+	scan := bufio.NewScanner(os.Stdin)
+
+	out, err := Value(scan)
+
+	for err == nil {
+		fmt.Println("The equivalent base10 is: ", out)
+		out, err = Value(scan)
+	}
+}
+
+//Value takes in a scanner, scans the command and give back a int and err
+func Value(s *bufio.Scanner) (int64, error) {
+	s.Scan()
+	word := s.Text()
+
+	if word == "q" {
+		os.Exit(1)
+	}
+
+	lower, err := strconv.ParseInt(word, 16, 64)
+	if err != nil {
+		return -1, err
+	}
+
+	return lower, nil
 }
