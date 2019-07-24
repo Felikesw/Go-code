@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	//"github.com/tarm/serial"
 )
 
 //Cfg is the configeration of the data frame
 type Cfg struct {
 	Port       string `json:"port"`
+	BaudRate   int    `json:"baud_rate"`
 	Length     byte   `json:"length"`
 	Version    byte   `json:"version"`
 	Sender     []byte `json:"sender"`
@@ -32,7 +34,8 @@ type Cfg struct {
 	Check      []byte `json:"check"`
 }
 
-func dataFrame(head []byte, ver byte, cfg *Cfg) ([]byte, error) {
+//DataFrame creates the data frame
+func DataFrame(head []byte, ver byte, cfg *Cfg) ([]byte, error) {
 	data := head
 	var temp0 int
 	var temp1 int
@@ -140,8 +143,10 @@ func dataFrame(head []byte, ver byte, cfg *Cfg) ([]byte, error) {
 
 }
 
+//example command
 func example(ver byte) *Cfg {
 	cfg := &Cfg{
+		BaudRate:   9600,
 		Version:    ver,
 		Length:     0x1c,
 		Sender:     []byte{0x06, 0x3f, 0x5e},
@@ -167,32 +172,40 @@ func example(ver byte) *Cfg {
 	return cfg
 }
 
-func main() {
-	head := []byte{0xa5, 0xa5, 0xa5, 0xa5, 0x03}
-	//BaudRate := 9600
-	version := byte(0x01)
+//File creates a cfg
+func File() (*Cfg, error) {
 	// test := example(version)
 	// writer, _ := os.OpenFile("cfg.json", os.O_RDWR|os.O_TRUNC, 0644)
 	// defer writer.Close()
 	// je := json.NewEncoder(writer)
 	// je.Encode(test)
+	// fmt.Println(test)
 
 	data, err := ioutil.ReadFile("./cfg.json")
 	if err != nil {
-		panic(err)
+		return &Cfg{}, err
 	}
 	cfg := &Cfg{}
 	if err := json.Unmarshal(data, cfg); err != nil {
-		panic(err)
+		return &Cfg{}, err
 	}
+
+	return cfg, nil
+}
+
+//Light is the actual main
+func Light(cfg *Cfg) ([]byte, error) {
+
+	head := []byte{0xa5, 0xa5, 0xa5, 0xa5, 0x03}
+	//version := byte(0x01)
 
 	switch cfg.FnCode {
 	case 0x1f: //editing parameters. Format for the editing parameter value(s): 0x80 + parameter value
 		fmt.Println("Editing parameters")
-		frame, _ := dataFrame(head, version, cfg)
+		frame, _ := DataFrame(head, cfg.Version, cfg)
 		fmt.Printf("Data frame sent: %x\n", frame)
-
+		return frame, nil
 	default:
-		fmt.Println("Errors: invalid function code")
+		return nil, fmt.Errorf("Errors: invalid function code")
 	}
 }
