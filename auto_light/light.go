@@ -64,6 +64,7 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) ([]byte, error) {
 		temp0 += int(v)
 		temp1 ^= int(v)
 	}
+
 	data = append(data, cfg.Number)
 	temp0 += int(cfg.Number)
 	temp1 ^= int(cfg.Number)
