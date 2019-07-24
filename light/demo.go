@@ -36,5 +36,5 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%x", buf[:n])
+	log.Printf("Data received: %x", buf[:n])
 }
