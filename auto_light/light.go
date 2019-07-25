@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	//"github.com/tarm/serial"
+	"log"
 )
 
 //Cfg is the configeration of the data frame
@@ -35,7 +35,7 @@ type Cfg struct {
 }
 
 //DataFrame creates the data frame
-func DataFrame(head []byte, ver byte, cfg *Cfg) ([]byte, error) {
+func DataFrame(head []byte, ver byte, cfg *Cfg) []byte {
 	data := head
 	var temp0 int
 	var temp1 int
@@ -140,34 +140,33 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) ([]byte, error) {
 
 	data = append(data, check1[7])
 
-	return data, nil
+	return data
 
 }
 
 //example command
-func example(ver byte) *Cfg {
+func example() *Cfg {
 	cfg := &Cfg{
-		BaudRate:   9600,
-		Version:    ver,
-		Length:     0x1c,
-		Sender:     []byte{0x06, 0x3f, 0x5e},
-		Reciever:   []byte{0x00, 0x00, 0x01},
-		Number:     0x07,
-		FnCode:     0x40,
-		ControlLn:  0x01,
+		Port:     "COM3",
+		BaudRate: 9600,
+		//Version:    ver,
+		Length:     0x1b,
+		Sender:     []byte{0x00, 0x00, 0x01},
+		Reciever:   []byte{0x3a, 0x25, 0x10},
+		Number:     0x01,
+		FnCode:     0x1f,
+		ControlLn:  0x00,
 		Power:      0x01,
-		Brightness: 0x03,
-		ColorTemp:  0x03,
-		Color:      []byte{0x0f, 0x00, 0x00, 0x05},
+		Brightness: 0x8f,
+		ColorTemp:  0x00,
+		Color:      []byte{0xff, 0xff, 0xff, 0xff},
 		Auto:       0x01,
 		Somebody:   0x0f,
 		Nobody:     0x03,
 		Chained:    0x0f,
-		Transition: 0x04,
-		Delay:      0x01,
+		Transition: 0x03,
+		Delay:      0x03,
 		LightType:  0x01,
-		Addition:   []byte{0x33},
-		Check:      []byte{0x8e, 0x06},
 	}
 
 	return cfg
@@ -175,7 +174,7 @@ func example(ver byte) *Cfg {
 
 //File creates a cfg
 func File() (*Cfg, error) {
-	// test := example(version)
+	// test := example()
 	// writer, _ := os.OpenFile("cfg.json", os.O_RDWR|os.O_TRUNC, 0644)
 	// defer writer.Close()
 	// je := json.NewEncoder(writer)
@@ -202,9 +201,9 @@ func Light(cfg *Cfg) ([]byte, error) {
 
 	switch cfg.FnCode {
 	case 0x1f: //editing parameters. Format for the editing parameter value(s): 0x80 + parameter value
-		fmt.Println("Editing parameters")
-		frame, _ := DataFrame(head, cfg.Version, cfg)
-		fmt.Printf("Data frame sent: %x\n", frame)
+		log.Println("Editing parameters...")
+		frame := DataFrame(head, cfg.Version, cfg)
+		log.Printf("Sent data frame: %x\n", frame)
 		return frame, nil
 	default:
 		return nil, fmt.Errorf("Errors: invalid function code")
