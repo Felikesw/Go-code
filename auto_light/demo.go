@@ -150,5 +150,5 @@ func WritePort(port *serial.Port, cfg *Cfg) {
 
 //Stats outputs all the stats
 func Stats(chunks []byte) {
-	fmt.Printf("\nPower: %x\nBrightness: %x\nColorTemp: %x\nColor: %x\nAuto: %x\nSomebody: %x\nNobody: %x\nChained: %x\nTransition: %x\nDelay: %x\nLightType: %x\n", chunks[16], chunks[17], chunks[18], chunks[19:23], chunks[23], chunks[24], chunks[25], chunks[26], chunks[27], chunks[28], chunks[29])
+	fmt.Printf("\nSender: %x\nReceiver: %x\nControl Line: %x\nPower: %x\nBrightness: %x\nColorTemp: %x\nColor: %x\nAuto: %x\nSomebody: %x\nNobody: %x\nChained: %x\nTransition: %x\nDelay: %x\nLightType: %x\n", chunks[7:10], chunks[10:13], chunks[15], chunks[16], chunks[17], chunks[18], chunks[19:23], chunks[23], chunks[24], chunks[25], chunks[26], chunks[27], chunks[28], chunks[29])
 }
