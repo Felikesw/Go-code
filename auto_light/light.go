@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 )
 
 //Cfg is the configeration of the data frame
@@ -147,39 +148,57 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) []byte {
 //example command
 func example() *Cfg {
 	cfg := &Cfg{
-		Port:     "COM3",
-		BaudRate: 9600,
-		//Version:    ver,
+		Port:       "COM3",
+		BaudRate:   9600,
+		Version:    0x01,
 		Length:     0x1b,
 		Sender:     []byte{0x00, 0x00, 0x01},
-		Reciever:   []byte{0x3a, 0x25, 0x10},
+		Reciever:   []byte{0x06, 0x3F, 0x58},
 		Number:     0x01,
 		FnCode:     0x1f,
 		ControlLn:  0x00,
 		Power:      0x01,
-		Brightness: 0x8f,
+		Brightness: 0x89,
 		ColorTemp:  0x00,
 		Color:      []byte{0xff, 0xff, 0xff, 0xff},
 		Auto:       0x01,
 		Somebody:   0x0f,
-		Nobody:     0x03,
+		Nobody:     0x81,
 		Chained:    0x0f,
 		Transition: 0x03,
 		Delay:      0x03,
 		LightType:  0x01,
+		Addition:   nil,
+		Check:      nil,
 	}
 
 	return cfg
 }
 
+//Edit allows users to edit the parameters
+func Edit() error {
+
+	log.Print("Editing cfg.json...")
+	test := example()
+
+	writer, err := os.OpenFile("cfg.json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	je := json.NewEncoder(writer)
+	err = je.Encode(test)
+	if err != nil {
+		return err
+	}
+
+	log.Print("cfg.json updated\n")
+	return nil
+}
+
 //File creates a cfg
 func File() (*Cfg, error) {
-	// test := example()
-	// writer, _ := os.OpenFile("cfg.json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-	// defer writer.Close()
-	// je := json.NewEncoder(writer)
-	// je.Encode(test)
-	// fmt.Println(test)
 
 	data, err := ioutil.ReadFile("./cfg.json")
 	if err != nil {
@@ -201,7 +220,7 @@ func Light(cfg *Cfg) ([]byte, error) {
 
 	switch cfg.FnCode {
 	case 0x1f: //editing parameters. Format for the editing parameter value(s): 0x80 + parameter value
-		log.Println("\nEditing parameters...")
+		log.Print("\nEditing parameters...")
 		frame := DataFrame(head, cfg.Version, cfg)
 		log.Printf("Sent data frame: %x\n", frame)
 		return frame, nil

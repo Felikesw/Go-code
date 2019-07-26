@@ -13,18 +13,23 @@ import (
 
 func main() {
 
+	// err := Edit()
+	// if err != nil {
+	// 	log.Fatal("Failed to edit cfg.json")
+	// }
+
 	cfg, err := File()
 	if err != nil {
-		log.Fatal("Failed to get data frame: ", err)
+		log.Fatal("Failed to load configuration: ", err)
 	}
 
 	//connetcting to the serial port
 	c := &serial.Config{Name: cfg.Port, Baud: cfg.BaudRate, ReadTimeout: time.Second * 5}
 	s, err := serial.OpenPort(c)
-	defer s.Close()
 	if err != nil {
 		log.Fatal("Failed to open port: ", err)
 	}
+	defer s.Close()
 
 	scan := bufio.NewScanner(os.Stdin)
 	var chunks []byte
@@ -40,44 +45,68 @@ func main() {
 		switch action {
 		case "p":
 			//power on, ReadPort will scan for 3 seconds, make sure the device is on before that
-			log.Println("\nAwaiting for the device to power on...")
+			log.Print("\nAwaiting for the device to power on...")
 
 			chunks = ReadPort(s)
 			if chunks == nil {
 				log.Fatal("Did not received any data, check your connection")
 			} else {
 				log.Printf("%x", chunks)
-				log.Println("Powered on data received")
+				log.Print("Powered on data received")
 			}
+
+			Stats(chunks)
 
 		case "r":
-			log.Println("\nReading data...")
+			log.Print("\nReading data...")
 			chunks = ReadPort(s)
 			if chunks == nil {
-				log.Println("Did not received any data, check your connection")
+				log.Print("Did not received any data, check your connection")
 			} else {
 				log.Printf("Received data: %x", chunks)
 			}
+
+			Stats(chunks)
 
 		case "w":
-			WritePort(s, cfg)
 
-			log.Println("Awaiting for the return data")
+			fmt.Println("Update with new data(y/n/t): ")
+			scan.Scan()
+			action = scan.Text()
+			temp := cfg
+
+			if action == "y" {
+				log.Print("Editing cfg.json...")
+				temp, err = File()
+				if err != nil {
+					log.Print("Error accessing cfg.json: ", err)
+				}
+				log.Print("cfg.json updated\n")
+			} else if action == "t" {
+				_ = Edit()
+				temp, _ = File()
+			}
+
+			WritePort(s, temp)
+
+			log.Print("Awaiting for the return data")
 			chunks = ReadPort(s)
 			if chunks == nil {
-				log.Println("Did not received any data, check your connection")
+				log.Print("Did not received any data, check your connection")
 			} else {
 				log.Printf("Received data: %x", chunks)
 			}
+
+			Stats(chunks)
 
 		case "q":
 			os.Exit(1)
 
 		default:
-			log.Println("Invalid function code, please select one of the following: w, r, q")
+			log.Print("Invalid function code, please select one of the following: w, r, q")
 		}
 
-		fmt.Println("\n\nPlease select an action (r = read; w = write; q = quit): ")
+		fmt.Print("\n\nPlease select an action (r = read; w = write; q = quit): ")
 		scan.Scan()
 		action = scan.Text()
 	}
@@ -93,7 +122,7 @@ func ReadPort(port *serial.Port) []byte {
 	for n != 0 {
 		n, err = port.Read(buf)
 		if err != nil && err != io.EOF {
-			log.Println("Corrupted data: ", chunks)
+			log.Print("Corrupted data: ", chunks)
 			log.Fatal("Failed to read data: ", err)
 		}
 
@@ -117,4 +146,9 @@ func WritePort(port *serial.Port, cfg *Cfg) {
 	if err != nil {
 		log.Fatal("Failed to write data: ", err)
 	}
+}
+
+//Stats outputs all the stats
+func Stats(chunks []byte) {
+	fmt.Printf("\nPower: %x\nBrightness: %x\nColorTemp: %x\nColor: %x\nAuto: %x\nSomebody: %x\nNobody: %x\nChained: %x\nTransition: %x\nDelay: %x\nLightType: %x\n", chunks[16], chunks[17], chunks[18], chunks[19:23], chunks[23], chunks[24], chunks[25], chunks[26], chunks[27], chunks[28], chunks[29])
 }
