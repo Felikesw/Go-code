@@ -175,7 +175,7 @@ func example() *Cfg {
 //File creates a cfg
 func File() (*Cfg, error) {
 	// test := example()
-	// writer, _ := os.OpenFile("cfg.json", os.O_RDWR|os.O_TRUNC, 0644)
+	// writer, _ := os.OpenFile("cfg.json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	// defer writer.Close()
 	// je := json.NewEncoder(writer)
 	// je.Encode(test)
@@ -201,7 +201,7 @@ func Light(cfg *Cfg) ([]byte, error) {
 
 	switch cfg.FnCode {
 	case 0x1f: //editing parameters. Format for the editing parameter value(s): 0x80 + parameter value
-		log.Println("Editing parameters...")
+		log.Println("\nEditing parameters...")
 		frame := DataFrame(head, cfg.Version, cfg)
 		log.Printf("Sent data frame: %x\n", frame)
 		return frame, nil

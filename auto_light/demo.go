@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"time"
@@ -25,41 +26,32 @@ func main() {
 		log.Fatal("Failed to open port: ", err)
 	}
 
-	fmt.Println("\n\nCheck for power on data (y/n): ")
-
 	scan := bufio.NewScanner(os.Stdin)
-	scan.Scan()
-	action := scan.Text()
-
 	var chunks []byte
 
-	if action == "y" {
-		//power on, ReadPort will scan for 3 seconds, make sure the device is on before that
-		log.Println("Awaiting for the device to power on...")
-
-		chunks = ReadPort(s)
-		if chunks == nil {
-			log.Fatal("Did not received any data, check your connection")
-		} else {
-			log.Printf("%x", chunks)
-			log.Println("Powered on data received")
-		}
-	}
-
 	//see what the user want to do
-	fmt.Println("\n\nPlease select an action (r = read; w = write; q = quit): ")
+	fmt.Println("\n\nPlease select an action (p = power on; r = read; w = write; q = quit): ")
 
 	scan.Scan()
-	action = scan.Text()
+	action := scan.Text()
 
 	for action != "q" {
 
 		switch action {
-		case "q":
-			os.Exit(1)
+		case "p":
+			//power on, ReadPort will scan for 3 seconds, make sure the device is on before that
+			log.Println("\nAwaiting for the device to power on...")
+
+			chunks = ReadPort(s)
+			if chunks == nil {
+				log.Fatal("Did not received any data, check your connection")
+			} else {
+				log.Printf("%x", chunks)
+				log.Println("Powered on data received")
+			}
 
 		case "r":
-			log.Println("Reading data...")
+			log.Println("\nReading data...")
 			chunks = ReadPort(s)
 			if chunks == nil {
 				log.Println("Did not received any data, check your connection")
@@ -77,6 +69,9 @@ func main() {
 			} else {
 				log.Printf("Received data: %x", chunks)
 			}
+
+		case "q":
+			os.Exit(1)
 
 		default:
 			log.Println("Invalid function code, please select one of the following: w, r, q")
@@ -97,7 +92,7 @@ func ReadPort(port *serial.Port) []byte {
 
 	for n != 0 {
 		n, err = port.Read(buf)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			log.Println("Corrupted data: ", chunks)
 			log.Fatal("Failed to read data: ", err)
 		}
