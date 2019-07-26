@@ -1,5 +1,4 @@
-data.json
-test.json
+*.json
 data.txt
 *.exe
 /test
