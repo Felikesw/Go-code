@@ -58,7 +58,12 @@ func main() {
 			Stats(chunks)
 
 		case "r":
-			log.Print("\nReading data...")
+
+			temp := Read()
+
+			WritePort(s, temp)
+
+			log.Print("Reading data...")
 			chunks = ReadPort(s)
 			if chunks == nil {
 				log.Print("Did not received any data, check your connection")
@@ -95,14 +100,14 @@ func main() {
 				log.Print("Did not received any data, check your connection")
 			} else {
 				log.Printf("Received data: %x", chunks)
-			}
 
-			err = Save(chunks)
-			if err != nil {
-				log.Println("Failed to save the input: ", err)
-			}
+				err = Save(chunks)
+				if err != nil {
+					log.Println("Failed to save the input: ", err)
+				}
 
-			Stats(chunks)
+				Stats(chunks)
+			}
 
 		case "q":
 			os.Exit(1)
@@ -144,7 +149,7 @@ func WritePort(port *serial.Port, cfg *Cfg) {
 	//getting the data frame
 	msg, err := Light(cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	_, err = port.Write(msg)

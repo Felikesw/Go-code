@@ -153,10 +153,10 @@ func Save(c []byte) error {
 		BaudRate:   9600,
 		Version:    0x01,
 		Length:     c[5],
-		Sender:     c[7:10],
-		Reciever:   c[10:13],
-		Number:     c[13],
-		FnCode:     c[14],
+		Sender:     []byte{0x00, 0x00, 0x01},
+		Reciever:   []byte{0x06, 0x3F, 0x58},
+		Number:     0x01,
+		FnCode:     0x1f,
 		ControlLn:  c[15],
 		Power:      c[16],
 		Brightness: c[17],
@@ -202,7 +202,7 @@ func example() *Cfg {
 		FnCode:     0x1f,
 		ControlLn:  0x00,
 		Power:      0x01,
-		Brightness: 0x89,
+		Brightness: 0x81,
 		ColorTemp:  0x00,
 		Color:      []byte{0xff, 0xff, 0xff, 0xff},
 		Auto:       0x01,
@@ -212,6 +212,36 @@ func example() *Cfg {
 		Transition: 0x03,
 		Delay:      0x03,
 		LightType:  0x01,
+		Addition:   nil,
+		Check:      nil,
+	}
+
+	return cfg
+}
+
+//Read returns a cfg for reading status
+func Read() *Cfg {
+	cfg := &Cfg{
+		Port:       "COM4",
+		BaudRate:   9600,
+		Version:    0x01,
+		Length:     0x00,
+		Sender:     []byte{0x00, 0x00, 0x01},
+		Reciever:   []byte{0x06, 0x3f, 0x58},
+		Number:     0x00,
+		FnCode:     0x1f,
+		ControlLn:  0x00,
+		Power:      0x00,
+		Brightness: 0x00,
+		ColorTemp:  0x00,
+		Color:      []byte{0x00, 0x00, 0x00, 0x00},
+		Auto:       0x00,
+		Somebody:   0x00,
+		Nobody:     0x00,
+		Chained:    0x00,
+		Transition: 0x00,
+		Delay:      0x00,
+		LightType:  0x00,
 		Addition:   nil,
 		Check:      nil,
 	}
@@ -265,7 +295,7 @@ func Light(cfg *Cfg) ([]byte, error) {
 
 	switch cfg.FnCode {
 	case 0x1f: //editing parameters. Format for the editing parameter value(s): 0x80 + parameter value
-		log.Print("\nEditing parameters...")
+		log.Print("Editing parameters...")
 		frame := DataFrame(head, cfg.Version, cfg)
 		log.Printf("Sent data frame: %x\n", frame)
 		return frame, nil
