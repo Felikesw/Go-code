@@ -145,10 +145,54 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) []byte {
 
 }
 
+//Save saves the return
+func Save(c []byte) error {
+
+	cfg := &Cfg{
+		Port:       "COM4",
+		BaudRate:   9600,
+		Version:    0x01,
+		Length:     c[5],
+		Sender:     c[7:10],
+		Reciever:   c[10:13],
+		Number:     c[13],
+		FnCode:     c[14],
+		ControlLn:  c[15],
+		Power:      c[16],
+		Brightness: c[17],
+		ColorTemp:  c[18],
+		Color:      c[19:23],
+		Auto:       c[23],
+		Somebody:   c[24],
+		Nobody:     c[25],
+		Chained:    c[26],
+		Transition: c[27],
+		Delay:      c[28],
+		LightType:  c[29],
+		Addition:   nil,
+		Check:      nil,
+	}
+
+	writer, err := os.OpenFile("cfg.json", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	je := json.NewEncoder(writer)
+	je.SetIndent("", "	")
+	err = je.Encode(cfg)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //example command
 func example() *Cfg {
 	cfg := &Cfg{
-		Port:       "COM3",
+		Port:       "COM4",
 		BaudRate:   9600,
 		Version:    0x01,
 		Length:     0x1b,
@@ -188,6 +232,7 @@ func Edit() error {
 	defer writer.Close()
 
 	je := json.NewEncoder(writer)
+	je.SetIndent("", "	")
 	err = je.Encode(test)
 	if err != nil {
 		return err
@@ -212,7 +257,7 @@ func File() (*Cfg, error) {
 	return cfg, nil
 }
 
-//Light is the actual main
+//Light returns a frame
 func Light(cfg *Cfg) ([]byte, error) {
 
 	head := []byte{0xa5, 0xa5, 0xa5, 0xa5, 0x03}

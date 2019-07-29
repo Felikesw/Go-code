@@ -1,1 +1,24 @@
-{"port":"COM3","baud_rate":9600,"length":27,"version":1,"sender":"AAAB","reciever":"Bj9Y","number":1,"fn_code":31,"control_ln":1,"power":1,"brightness":129,"color_temp":0,"color":"/////w==","auto":1,"somebody":15,"nobody":129,"chained":15,"transition":3,"delay":3,"light_type":1,"addition":null,"check":null}
+{
+	"port": "COM4",
+	"baud_rate": 9600,
+	"length": 28,
+	"version": 1,
+	"sender": "Bj9Y",
+	"reciever": "AAAB",
+	"number": 139,
+	"fn_code": 64,
+	"control_ln": 0,
+	"power": 1,
+	"brightness": 9,
+	"color_temp": 3,
+	"color": "DwAABQ==",
+	"auto": 1,
+	"somebody": 15,
+	"nobody": 1,
+	"chained": 15,
+	"transition": 4,
+	"delay": 1,
+	"light_type": 1,
+	"addition": null,
+	"check": null
+}

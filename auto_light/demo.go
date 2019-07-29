@@ -97,6 +97,11 @@ func main() {
 				log.Printf("Received data: %x", chunks)
 			}
 
+			err = Save(chunks)
+			if err != nil {
+				log.Println("Failed to save the input: ", err)
+			}
+
 			Stats(chunks)
 
 		case "q":
