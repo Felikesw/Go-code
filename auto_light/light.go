@@ -230,7 +230,7 @@ func Read() *Cfg {
 		Reciever:   []byte{0x06, 0x3f, 0x58},
 		Number:     0x00,
 		FnCode:     0x1f,
-		ControlLn:  0x00,
+		ControlLn:  0x01,
 		Power:      0x00,
 		Brightness: 0x00,
 		ColorTemp:  0x00,
