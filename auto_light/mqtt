@@ -1,0 +1,22 @@
+The data of the project is sampled and command using MQTT
+
+Command (ex.):
+
+Publish: 
+command/9H200A1700112/ls1/setPower0
+
+Message: 
+{"monitoringUnit":"9H70002600006","sampleUnit":"ls1","channel":"val",
+"parameters":{"power":1},"phase":"executing","timeout":5000,"operator":"admin","
+startTime":"2018-06-13T07:14:23.135Z","endTime":"2018-06-13T07:14:24.401Z","result":"165","_phase":"executing"}
+
+
+Sample (ex.):
+
+Suscribe: 
+sample-values/9H200A1700112/ls1/Power0
+
+Message: 
+{"monitoringUnit":"9H70002600006","sampleUnit":"ls1","channel":"val",
+,"phase":"executing","timeout":5000,"operator":"admin","
+startTime":"2018-06-13T07:14:23.135Z","endTime":"2018-06-13T07:14:24.401Z","result":"165","_phase":"executing"}
