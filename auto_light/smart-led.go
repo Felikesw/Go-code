@@ -2,7 +2,7 @@
 *
 * Copyright 2018 huayuan-iot
 *
-* Author: Johnson
+* Author: Johnson, Lynn
 * Date: 2019/07/29
 * Despcription: smart LED implement
 *
@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"sync"
 	"time"
 
 	"clc.hmu/app/public"
@@ -25,9 +26,12 @@ import (
 // SmartLEDClientID id
 var SmartLEDClientID = "smartledclient"
 
+var slmtx sync.Mutex
+
 // SmartLEDClient client
 type SmartLEDClient struct {
 	ClientID string
+	// Commanding bool
 
 	Port *serial.Port
 }
@@ -79,12 +83,7 @@ func (light *SmartLEDClient) Sample(payload string) (string, error) {
 	cfg.Channel = cfg.Channel[:len(cfg.Channel)-1]
 	read := SendFrmae(&cfg)
 
-	err = WritePort(light.Port, read)
-	if err != nil {
-		return "", err
-	}
-
-	chunks, err := ReadPort(light.Port)
+	chunks, err := WriteReadPort(light.Port, read)
 	if err != nil {
 		return "", err
 	}
@@ -100,11 +99,11 @@ func (light *SmartLEDClient) Sample(payload string) (string, error) {
 
 	//fmt.Printf("%v : %v\n", cfg.Channel, value)
 	return value, nil
+
 }
 
 //Command command, set values
 func (light *SmartLEDClient) Command(payload string) (string, error) {
-
 	cfg, err := DecodeSmartLEDPayload(payload)
 	if err != nil {
 		return "", fmt.Errorf("decode payload failed, errmsg [%v]", err)
@@ -183,14 +182,8 @@ func (light *SmartLEDClient) Command(payload string) (string, error) {
 		return "", fmt.Errorf("decode payload failed, errmsg [%v]", x)
 	}
 
-	//sending out data to edit
-	err = WritePort(light.Port, edit)
-	if err != nil {
-		return "", err
-	}
-
 	//receiving data for feed back
-	chunks, err := ReadPort(light.Port)
+	chunks, err := WriteReadPort(light.Port, edit)
 	if err != nil {
 		return "", err
 	}
@@ -200,7 +193,7 @@ func (light *SmartLEDClient) Command(payload string) (string, error) {
 	}
 
 	value, err := receive(edit.Channel[3:], chunks)
-	fmt.Println("channel: ", edit.Channel[3:])
+	//fmt.Println("channel: ", edit.Channel[3:])
 	if err != nil {
 		return "", err
 	}
@@ -257,8 +250,15 @@ func receive(option string, chunks []byte) (string, error) {
 	return value, nil
 }
 
-//WritePort writes data to the port
-func WritePort(port *serial.Port, cfg *public.SmartLEDOperationPayload) error {
+//WriteReadPort writes data to the port
+func WriteReadPort(port *serial.Port, cfg *public.SmartLEDOperationPayload) ([]byte, error) {
+
+	// if !execute {
+	// 	return nil, nil
+	// }
+	slmtx.Lock()
+	defer slmtx.Unlock()
+
 	//getting the data frame
 	head := []byte{0xa5, 0xa5, 0xa5, 0xa5, 0x03}
 	version := byte(0x01)
@@ -268,14 +268,10 @@ func WritePort(port *serial.Port, cfg *public.SmartLEDOperationPayload) error {
 
 	_, err := port.Write(frame)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	//fmt.Printf("out: %x\n", frame)
-	return nil
-}
 
-//ReadPort reads data from the port
-func ReadPort(port *serial.Port) ([]byte, error) {
 	var chunks []byte
 	buf := make([]byte, 128)
 
@@ -300,7 +296,7 @@ func ReadPort(port *serial.Port) ([]byte, error) {
 		x := "invalid data frame received"
 		return chunks, fmt.Errorf("decode payload failed, errmsg [%v]", x)
 	}
-	//fmt.Printf("In: %x", chunks)
+	//fmt.Printf("In: %x\n", chunks)
 
 	return chunks, nil
 }
