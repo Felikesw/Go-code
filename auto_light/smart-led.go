@@ -8,7 +8,7 @@
 *
  */
 
-package protocol
+package main
 
 import (
 	"encoding/binary"

@@ -8,7 +8,7 @@
  *
  */
 
-package portmanager_test
+package main
 
 import (
 	"encoding/json"
