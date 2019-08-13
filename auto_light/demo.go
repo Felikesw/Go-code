@@ -55,8 +55,6 @@ func main() {
 				log.Print("Powered on data received")
 			}
 
-			Stats(chunks)
-
 		case "r":
 
 			temp := Read()
