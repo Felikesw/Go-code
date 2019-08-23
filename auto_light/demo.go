@@ -24,7 +24,7 @@ func main() {
 	}
 
 	//connetcting to the serial port
-	c := &serial.Config{Name: cfg.Port, Baud: cfg.BaudRate, ReadTimeout: time.Second * 5}
+	c := &serial.Config{Name: cfg.Port, Baud: cfg.BaudRate, ReadTimeout: time.Second * 1}
 	s, err := serial.OpenPort(c)
 	if err != nil {
 		log.Fatal("Failed to open port: ", err)
@@ -67,9 +67,13 @@ func main() {
 				log.Print("Did not received any data, check your connection")
 			} else {
 				log.Printf("Received data: %x", chunks)
-			}
+				Stats(chunks)
 
-			Stats(chunks)
+				err = Save(chunks)
+				if err != nil {
+					log.Println("Failed to save the input: ", err)
+				}
+			}
 
 		case "w":
 
@@ -139,6 +143,10 @@ func ReadPort(port *serial.Port) []byte {
 		}
 	}
 
+	// if frequencyLowerFourBits := 0x0f & chuncks[14]; frequencyLowerFourBits > 5 {F
+	// 	x := "sampling too frequent, please increase the sampling period"
+	// }
+
 	return chunks
 }
 
@@ -158,5 +166,5 @@ func WritePort(port *serial.Port, cfg *Cfg) {
 
 //Stats outputs all the stats
 func Stats(chunks []byte) {
-	fmt.Printf("\nSender: %x\nReceiver: %x\nControl Line: %x\nPower: %x\nBrightness: %x\nColorTemp: %x\nColor: %x\nAuto: %x\nSomebody: %x\nNobody: %x\nChained: %x\nTransition: %x\nDelay: %x\nLightType: %x\n", chunks[7:10], chunks[10:13], chunks[15], chunks[16], chunks[17], chunks[18], chunks[19:23], chunks[23], chunks[24], chunks[25], chunks[26], chunks[27], chunks[28], chunks[29])
+	fmt.Printf("\nSender: %x\nReceiver: %x\nFrequency: %x\nControl Line: %x\nPower: %x\nBrightness: %x\nColorTemp: %x\nColor: %x\nAuto: %x\nSomebody: %x\nNobody: %x\nChained: %x\nTransition: %x\nDelay: %x\nLightType: %x\n", chunks[7:10], chunks[10:13], chunks[14], chunks[16], chunks[17], chunks[18], chunks[19], chunks[20:24], chunks[24], chunks[25], chunks[26], chunks[27], chunks[28], chunks[29], chunks[30])
 }

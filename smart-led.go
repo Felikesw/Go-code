@@ -8,7 +8,7 @@
 *
  */
 
-package main
+package protocol
 
 import (
 	"encoding/binary"
@@ -31,30 +31,35 @@ var slmtx sync.Mutex
 // SmartLEDClient client
 type SmartLEDClient struct {
 	ClientID string
-	// Commanding bool
+	DeviceID string
+	Normal   int
+	Abnormal int
 
 	Port *serial.Port
 }
 
 // NewSmartLEDClient new client
-func NewSmartLEDClient(port string, baudrate, timeout int) (*SmartLEDClient, error) {
+func NewSmartLEDClient(port, deviceID string, baudrate, timeout int) (*SmartLEDClient, error) {
 	cfg := &serial.Config{Name: port, Baud: baudrate, ReadTimeout: time.Millisecond * time.Duration(timeout)}
 	fmt.Println("cfg:", cfg)
-	sp, err := serial.OpenPort(cfg)
+	serialPort, err := serial.OpenPort(cfg)
 	if err != nil {
 		return &SmartLEDClient{}, err
 	}
 
 	var client SmartLEDClient
 	client.ClientID = SmartLEDClientID
-	client.Port = sp
+	client.DeviceID = deviceID
+	client.Port = serialPort
+	client.Normal = 0
+	client.Abnormal = 0
 
 	return &client, nil
 }
 
 //ID specified client's ID, use for searching
 func (light *SmartLEDClient) ID() string {
-	return light.ClientID
+	return light.ClientID + light.DeviceID
 }
 
 //Sample sample, get values
@@ -83,7 +88,7 @@ func (light *SmartLEDClient) Sample(payload string) (string, error) {
 	cfg.Channel = cfg.Channel[:len(cfg.Channel)-1]
 	read := SendFrmae(&cfg)
 
-	chunks, err := WriteReadPort(light.Port, read)
+	chunks, err := WriteReadPort(light.Port, read, light)
 	if err != nil {
 		return "", err
 	}
@@ -183,7 +188,7 @@ func (light *SmartLEDClient) Command(payload string) (string, error) {
 	}
 
 	//receiving data for feed back
-	chunks, err := WriteReadPort(light.Port, edit)
+	chunks, err := WriteReadPort(light.Port, edit, light)
 	if err != nil {
 		return "", err
 	}
@@ -197,7 +202,7 @@ func (light *SmartLEDClient) Command(payload string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
+	//fmt.Printf("command received: %x\n", chunks)
 	return value, nil
 }
 
@@ -210,37 +215,37 @@ func receive(option string, chunks []byte) (string, error) {
 	var value string
 	switch option {
 	case "Power":
-		value = strconv.Itoa(int(chunks[16]))
-
-	case "Brightness":
 		value = strconv.Itoa(int(chunks[17]))
 
-	case "ColorTemp":
+	case "Brightness":
 		value = strconv.Itoa(int(chunks[18]))
 
+	case "ColorTemp":
+		value = strconv.Itoa(int(chunks[19]))
+
 	case "Color":
-		value = strconv.Itoa(int(chunks[19])) + strconv.Itoa(int(chunks[20])) + strconv.Itoa(int(chunks[21])) + strconv.Itoa(int(chunks[22]))
+		value = strconv.Itoa(int(chunks[20])) + strconv.Itoa(int(chunks[21])) + strconv.Itoa(int(chunks[22])) + strconv.Itoa(int(chunks[23]))
 
 	case "Auto":
-		value = strconv.Itoa(int(chunks[23]))
-
-	case "Somebody":
 		value = strconv.Itoa(int(chunks[24]))
 
-	case "Nobody":
+	case "Somebody":
 		value = strconv.Itoa(int(chunks[25]))
 
-	case "Chained":
+	case "Nobody":
 		value = strconv.Itoa(int(chunks[26]))
 
-	case "Transition":
+	case "Chained":
 		value = strconv.Itoa(int(chunks[27]))
 
-	case "Delay":
+	case "Transition":
 		value = strconv.Itoa(int(chunks[28]))
 
-	case "LightType":
+	case "Delay":
 		value = strconv.Itoa(int(chunks[29]))
+
+	case "LightType":
+		value = strconv.Itoa(int(chunks[30]))
 
 	default:
 		x := "invalid channel id"
@@ -251,13 +256,12 @@ func receive(option string, chunks []byte) (string, error) {
 }
 
 //WriteReadPort writes data to the port
-func WriteReadPort(port *serial.Port, cfg *public.SmartLEDOperationPayload) ([]byte, error) {
+func WriteReadPort(port *serial.Port, cfg *public.SmartLEDOperationPayload, light *SmartLEDClient) ([]byte, error) {
 
-	// if !execute {
-	// 	return nil, nil
-	// }
 	slmtx.Lock()
 	defer slmtx.Unlock()
+
+	//defer time.Sleep(500 * time.Millisecond)
 
 	//getting the data frame
 	head := []byte{0xa5, 0xa5, 0xa5, 0xa5, 0x03}
@@ -275,7 +279,7 @@ func WriteReadPort(port *serial.Port, cfg *public.SmartLEDOperationPayload) ([]b
 	var chunks []byte
 	buf := make([]byte, 128)
 
-	for len(chunks) < 33 {
+	for len(chunks) < 34 {
 		n, err := port.Read(buf)
 		if err != nil && err != io.EOF {
 			return chunks, err
@@ -292,18 +296,34 @@ func WriteReadPort(port *serial.Port, cfg *public.SmartLEDOperationPayload) ([]b
 		//fmt.Println("here: ", chunks, " and ", n)
 	}
 
-	if len(chunks) > 33 {
+	if len(chunks) > 34 {
 		x := "invalid data frame received"
 		return chunks, fmt.Errorf("decode payload failed, errmsg [%v]", x)
 	}
 	//fmt.Printf("In: %x\n", chunks)
 
+	if frequencyLowerFourBits := 0x0f & chunks[14]; frequencyLowerFourBits > 0 {
+		light.Abnormal++
+		//fmt.Println("abnormal: ", light.Abnormal, "lower: ", frequencyLowerFourBits)
+	} else {
+		light.Normal++
+	}
+
+	//starting to check after 100 sampling/commanding
+	if (light.Abnormal + light.Normal) >= 100 {
+		lowerCheck := float64(light.Abnormal) / float64(light.Abnormal+light.Normal) * 100
+		if lowerCheck > 20 {
+			x := "sampling too frequent, please increase the sampling period or restart"
+			return chunks, fmt.Errorf("sampling speed [%v]", x)
+		}
+	}
+
 	return chunks, nil
 }
 
 // DecodeSmartLEDBindingPayload decode binding payload
-func DecodeSmartLEDBindingPayload(payload string) (public.CommonSerialBindingPayload, error) {
-	var p public.CommonSerialBindingPayload
+func DecodeSmartLEDBindingPayload(payload string) (public.SmartLedBindingPayload, error) {
+	var p public.SmartLedBindingPayload
 	if err := json.Unmarshal([]byte(payload), &p); err != nil {
 		return p, err
 	}
@@ -329,6 +349,7 @@ func SendFrmae(c *public.SmartLEDOperationPayload) *public.SmartLEDOperationPayl
 		Sender:     []byte{0x00, 0x00, 0x01},
 		Reciever:   c.Reciever,
 		Number:     0x00,
+		Frequency:  0x00,
 		FnCode:     0x1f,
 		ControlLn:  c.ControlLn,
 		Power:      0x00,
@@ -354,13 +375,13 @@ func DataFrame(head []byte, ver byte, cfg *public.SmartLEDOperationPayload) []by
 	var temp0 int
 	var temp1 int
 	if cfg.FnCode == 0x40 {
+		data = append(data, 0x1d)
+		temp0 = 0x1d
+		temp1 = 0x1d
+	} else {
 		data = append(data, 0x1c)
 		temp0 = 0x1c
 		temp1 = 0x1c
-	} else {
-		data = append(data, 0x1b)
-		temp0 = 0x1b
-		temp1 = 0x1b
 	}
 
 	data = append(data, ver)
@@ -382,6 +403,10 @@ func DataFrame(head []byte, ver byte, cfg *public.SmartLEDOperationPayload) []by
 	data = append(data, cfg.Number)
 	temp0 += int(cfg.Number)
 	temp1 ^= int(cfg.Number)
+
+	data = append(data, cfg.Frequency)
+	temp0 += int(cfg.Frequency)
+	temp1 ^= int(cfg.Frequency)
 
 	data = append(data, cfg.FnCode)
 	temp0 += int(cfg.FnCode)

@@ -18,6 +18,7 @@ type Cfg struct {
 	Sender     []byte `json:"sender"`
 	Reciever   []byte `json:"reciever"`
 	Number     byte   `json:"number"`
+	Frequency  byte   `json:"frequency"`
 	FnCode     byte   `json:"fn_code"`
 	ControlLn  byte   `json:"control_ln"`
 	Power      byte   `json:"power"`
@@ -41,13 +42,13 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) []byte {
 	var temp0 int
 	var temp1 int
 	if cfg.FnCode == 0x40 {
+		data = append(data, 0x1d)
+		temp0 = 0x1d
+		temp1 = 0x1d
+	} else {
 		data = append(data, 0x1c)
 		temp0 = 0x1c
 		temp1 = 0x1c
-	} else {
-		data = append(data, 0x1b)
-		temp0 = 0x1b
-		temp1 = 0x1b
 	}
 
 	data = append(data, ver)
@@ -69,6 +70,10 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) []byte {
 	data = append(data, cfg.Number)
 	temp0 += int(cfg.Number)
 	temp1 ^= int(cfg.Number)
+
+	data = append(data, cfg.Frequency)
+	temp0 += int(cfg.Frequency)
+	temp1 ^= int(cfg.Frequency)
 
 	data = append(data, cfg.FnCode)
 	temp0 += int(cfg.FnCode)
@@ -149,26 +154,27 @@ func DataFrame(head []byte, ver byte, cfg *Cfg) []byte {
 func Save(c []byte) error {
 
 	cfg := &Cfg{
-		Port:       "COM4",
+		Port:       "COM6",
 		BaudRate:   9600,
 		Version:    0x01,
 		Length:     c[5],
 		Sender:     []byte{0x00, 0x00, 0x01},
-		Reciever:   []byte{0x06, 0x3F, 0x58},
+		Reciever:   []byte{0x06, 0x3F, 0x25},
 		Number:     0x01,
+		Frequency:  c[14],
 		FnCode:     0x1f,
-		ControlLn:  c[15],
-		Power:      c[16],
-		Brightness: c[17],
-		ColorTemp:  c[18],
-		Color:      c[19:23],
-		Auto:       c[23],
-		Somebody:   c[24],
-		Nobody:     c[25],
-		Chained:    c[26],
-		Transition: c[27],
-		Delay:      c[28],
-		LightType:  c[29],
+		ControlLn:  c[16],
+		Power:      c[17],
+		Brightness: c[18],
+		ColorTemp:  c[19],
+		Color:      c[20:24],
+		Auto:       c[24],
+		Somebody:   c[25],
+		Nobody:     c[26],
+		Chained:    c[27],
+		Transition: c[28],
+		Delay:      c[29],
+		LightType:  c[30],
 		Addition:   nil,
 		Check:      nil,
 	}
@@ -192,16 +198,17 @@ func Save(c []byte) error {
 //example command
 func example() *Cfg {
 	cfg := &Cfg{
-		Port:       "COM4",
+		Port:       "COM6",
 		BaudRate:   9600,
 		Version:    0x01,
-		Length:     0x1b,
+		Length:     0x1c,
 		Sender:     []byte{0x00, 0x00, 0x01},
-		Reciever:   []byte{0x06, 0x3F, 0x58},
+		Reciever:   []byte{0x06, 0x3F, 0x25},
 		Number:     0x01,
+		Frequency:  0x00,
 		FnCode:     0x1f,
-		ControlLn:  0x00,
-		Power:      0x01,
+		ControlLn:  0x01,
+		Power:      0x80,
 		Brightness: 0x81,
 		ColorTemp:  0x00,
 		Color:      []byte{0xff, 0xff, 0xff, 0xff},
@@ -211,7 +218,7 @@ func example() *Cfg {
 		Chained:    0x0f,
 		Transition: 0x03,
 		Delay:      0x03,
-		LightType:  0x01,
+		LightType:  0x00,
 		Addition:   nil,
 		Check:      nil,
 	}
@@ -222,13 +229,14 @@ func example() *Cfg {
 //Read returns a cfg for reading status
 func Read() *Cfg {
 	cfg := &Cfg{
-		Port:       "COM4",
+		Port:       "COM6",
 		BaudRate:   9600,
 		Version:    0x01,
-		Length:     0x00,
+		Length:     0x1c,
 		Sender:     []byte{0x00, 0x00, 0x01},
-		Reciever:   []byte{0x06, 0x3f, 0x58},
+		Reciever:   []byte{0x06, 0x3f, 0x25},
 		Number:     0x00,
+		Frequency:  0x00,
 		FnCode:     0x1f,
 		ControlLn:  0x01,
 		Power:      0x00,
@@ -295,7 +303,6 @@ func Light(cfg *Cfg) ([]byte, error) {
 
 	switch cfg.FnCode {
 	case 0x1f: //editing parameters. Format for the editing parameter value(s): 0x80 + parameter value
-		log.Print("Editing parameters...")
 		frame := DataFrame(head, cfg.Version, cfg)
 		log.Printf("Sent data frame: %x\n", frame)
 		return frame, nil

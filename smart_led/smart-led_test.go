@@ -24,7 +24,7 @@ func TestNewSmartLEDClient(t *testing.T) {
 	baudrate := 9600
 	timeout := 5000
 
-	client, err := protocol.NewSmartLEDClient(port, baudrate, timeout)
+	client, err := protocol.NewSmartLEDClient(port, "409375", baudrate, timeout)
 	if err != nil {
 		t.Error(err)
 	}
@@ -38,7 +38,7 @@ func TestID(t *testing.T) {
 	baudrate := 9600
 	timeout := 5000
 
-	client, err := protocol.NewSmartLEDClient(port, baudrate, timeout)
+	client, err := protocol.NewSmartLEDClient(port, "409375", baudrate, timeout)
 	if err != nil {
 		t.Error(err)
 	}
@@ -52,7 +52,7 @@ func TestSample(t *testing.T) {
 	baudrate := 9600
 	timeout := 3000
 
-	client, err := protocol.NewSmartLEDClient(port, baudrate, timeout)
+	client, err := protocol.NewSmartLEDClient(port, "409375", baudrate, timeout)
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +78,7 @@ func TestCommand(t *testing.T) {
 	baudrate := 9600
 	timeout := 3000
 
-	client, err := protocol.NewSmartLEDClient(port, baudrate, timeout)
+	client, err := protocol.NewSmartLEDClient(port, "409375", baudrate, timeout)
 	if err != nil {
 		t.Error(err)
 	}
